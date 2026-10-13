@@ -1,3 +1,5 @@
-Makefile.win
-tpi estructurada.exe
-tpi estructurada.layout
+.win
+.exe
+.layout
+.o
+.dat
