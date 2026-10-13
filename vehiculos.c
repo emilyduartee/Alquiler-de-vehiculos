@@ -44,10 +44,11 @@ void submenuVehiculos() {
 }
 
 void registrarVehiculo() {
-    struct Vehiculo nuevoAuto; // Variable para guardar los datos del auto nuevo.
-    struct Vehiculo autoLeido; // Variable temporal para leer el archivo.
+    struct Vehiculo nuevoAuto; // Variable para guardar los datos del auto nuevo
+    struct Vehiculo autoLeido; // Variable temporal para leer el archivo
     FILE *archivo;
-    int existe = 0;            // 0="no existe", 1="ya existe".
+    int existe = 0;            // 0="no existe", 1="ya existe"
+    system("cls");
     printf("\n--- ALTA DE VEHICULO ---\n");
     printf("Ingrese la patente: ");
     scanf("%s", nuevoAuto.patente);
@@ -96,6 +97,7 @@ void modificarVehiculo() {
     struct Vehiculo autoLeido;
     char patenteBuscada[15];
     int encontrado = 0;
+    system("cls");
     printf("\n--- MODIFICAR VEHICULO ---\n");
     printf("Ingrese la patente del vehiculo a modificar: ");
     scanf("%s", patenteBuscada);
@@ -128,6 +130,7 @@ void buscarVehiculo() {
     struct Vehiculo autoLeido;
     char patenteBuscada[15];
     int encontrado = 0;
+    system("cls");
     printf("\n--- BUSCAR VEHICULO ---\n");
     printf("Ingrese la patente a buscar: ");
     scanf("%s", patenteBuscada);
