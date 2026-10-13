@@ -1,5 +1,5 @@
-.win
-.exe
-.layout
-.o
-.dat
+*.dat
+*.exe
+*.o
+*.win
+*.layout
