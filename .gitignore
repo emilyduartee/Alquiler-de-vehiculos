@@ -5,3 +5,6 @@
 *.layout
 tpi estructurada.layout
 tpi estructurada.layout
+*.exe
+*.layout
+*.win

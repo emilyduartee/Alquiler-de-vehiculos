@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "menu.h" 
 #include "vehiculos.h"
+#include "movimientos.h"
 
 void pausarPantalla() {
     printf("\nPresione ENTER para continuar...");
