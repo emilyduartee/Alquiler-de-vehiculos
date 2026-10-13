@@ -8,3 +8,7 @@ tpi estructurada.layout
 *.exe
 *.layout
 *.win
+*.exe
+*.layout
+*.win
+*.o

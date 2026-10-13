@@ -6,6 +6,7 @@
 void submenuVehiculos() {
     int opc;
     do {
+    	system("cls");
         printf("\n=== SUBMENU VEHICULOS ===\n");
         printf("1. Registrar vehiculo\n");
         printf("2. Modificar vehiculo\n");
@@ -44,14 +45,15 @@ void submenuVehiculos() {
 }
 
 void registrarVehiculo() {
-    struct Vehiculo nuevoAuto; // Variable para guardar los datos del auto nuevo
-    struct Vehiculo autoLeido; // Variable temporal para leer el archivo
+    struct Vehiculo nuevoAuto; // datos del auto nuevo
+    struct Vehiculo autoLeido; // para leer el archivo
     FILE *archivo;
     int existe = 0;            // 0="no existe", 1="ya existe"
     system("cls");
     printf("\n--- ALTA DE VEHICULO ---\n");
     printf("Ingrese la patente: ");
-    scanf("%s", nuevoAuto.patente);
+    fflush(stdin);
+    gets(nuevoAuto.patente);
     //Control de patente duplicada
     archivo = fopen("vehiculos.dat", "rb"); 
     if (archivo != NULL) {
@@ -69,13 +71,14 @@ void registrarVehiculo() {
         printf("Operacion cancelada.\n");
     } else {
         printf("Ingrese la marca: ");
-        scanf("%s", nuevoAuto.marca);
+        gets(nuevoAuto.marca);
         printf("Ingrese el modelo: ");
-        scanf("%s", nuevoAuto.modelo);
+        gets(nuevoAuto.modelo);
         printf("Ingrese el anio: ");
         scanf("%d", &nuevoAuto.anio);
+        fflush(stdin);
         printf("Ingrese el tipo (ej. Auto, Camioneta): ");
-        scanf("%s", nuevoAuto.tipo);
+        gets(nuevoAuto.tipo);
         printf("Ingrese la capacidad (cantidad de personas): ");
         scanf("%d", &nuevoAuto.capacidad);
         printf("Ingrese el precio por dia: ");
@@ -100,7 +103,7 @@ void modificarVehiculo() {
     system("cls");
     printf("\n--- MODIFICAR VEHICULO ---\n");
     printf("Ingrese la patente del vehiculo a modificar: ");
-    scanf("%s", patenteBuscada);
+    gets(patenteBuscada);
     archivo = fopen("vehiculos.dat", "r+b"); 
     if (archivo == NULL) {
         printf("[ERROR] El archivo no existe o no hay vehiculos registrados.\n");
@@ -133,7 +136,8 @@ void buscarVehiculo() {
     system("cls");
     printf("\n--- BUSCAR VEHICULO ---\n");
     printf("Ingrese la patente a buscar: ");
-    scanf("%s", patenteBuscada);
+    fflush(stdin);
+    gets(patenteBuscada);
     archivo = fopen("vehiculos.dat", "rb"); 
     if (archivo == NULL) {
         printf("[ERROR] No hay vehiculos registrados.\n");

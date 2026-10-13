@@ -6,9 +6,8 @@
 
 void pausarPantalla() {
     printf("\nPresione ENTER para continuar...");
-    // Limpieza de buffer
-    while(getchar() != '\n');
-    getchar(); // Espera a que el usuario presione una tecla
+    fflush(stdin);
+    getchar();
 }
 
 // Desarrollo de la función menu

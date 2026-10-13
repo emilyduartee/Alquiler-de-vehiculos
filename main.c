@@ -6,6 +6,5 @@
 int main() {
     // Llamamos a la función que está en menu.c
     mostrarMenuPrincipal();
-
     return 0;
 }
