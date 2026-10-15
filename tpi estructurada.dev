@@ -100,8 +100,8 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit6]
-FileName=movimientos.h
+[Unit7]
+FileName=movimientos.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -110,8 +110,18 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit7]
-FileName=movimientos.c
+[Unit8]
+FileName=reportes.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit6]
+FileName=movimientos.h
 CompileCpp=0
 Folder=
 Compile=1
