@@ -34,6 +34,7 @@ void submenuVehiculos() {
             case 0:
             	system("cls");
                 printf("\n>>> Volviendo al Menu Principal...\n");
+                mostrarMenuPrincipal();
                 pausarPantalla();
                 break;
             default:
@@ -76,13 +77,25 @@ void registrarVehiculo() {
         gets(nuevoAuto.modelo);
         printf("Ingrese el anio: ");
         scanf("%d", &nuevoAuto.anio);
+        do{
+        	printf("ERROR ingrese un año valido.");
+        	scanf("%d", &nuevoAuto.anio);
+		} while (nuevoAuto.anio<1900||nuevoAuto.anio>2026);
         fflush(stdin);
         printf("Ingrese el tipo (ej. Auto, Camioneta): ");
         gets(nuevoAuto.tipo);
         printf("Ingrese la capacidad (cantidad de personas): ");
         scanf("%d", &nuevoAuto.capacidad);
-        printf("Ingrese el precio por dia: ");
-        scanf("%f", &nuevoAuto.precio_dia);    
+        do{
+        	printf("ERROR ingrese una capacidad valida.");
+        	scanf("%d", &nuevoAuto.capacidad);
+		} while (nuevoAuto.capacidad<1);
+		printf("Ingrese el precio por dia: ");
+        scanf("%f", &nuevoAuto.precio_dia);   
+		do{
+        	printf("ERROR ingrese un precio valido.");
+        	scanf("%f", &nuevoAuto.precio_dia);
+		} while (nuevoAuto.precio_dia<=0);
         strcpy(nuevoAuto.estado, "Disponible"); 
         archivo = fopen("vehiculos.dat", "ab"); 
         if (archivo != NULL) {
@@ -115,8 +128,13 @@ void modificarVehiculo() {
             printf("\nVehiculo encontrado: %s %s\n", autoLeido.marca, autoLeido.modelo);
             printf("Ingrese el nuevo precio por dia: ");
             scanf("%f", &autoLeido.precio_dia);
+            do{
+        		printf("ERROR ingrese un precio valido.");
+        		scanf("%f", &autoLeido.precio_dia);
+			} while (autoLeido.precio_dia<=0);
             printf("Ingrese el nuevo estado (Disponible, Alquilado, Baja, En mantenimiento): ");
-            scanf("%s", autoLeido.estado);
+            fflush(stdin);
+            gets(autoLeido.estado);
             fseek(archivo, -sizeof(struct Vehiculo), SEEK_CUR);
             fwrite(&autoLeido, sizeof(struct Vehiculo), 1, archivo);
             printf("\nVehiculo modificado exitosamente!\n");
