@@ -31,6 +31,11 @@ void submenuVehiculos() {
                 buscarVehiculo();
                 pausarPantalla();
                 break;
+            case 4:
+                system("cls");
+                listarVehiculos();
+                pausarPantalla();
+                break;
             case 0:
             	system("cls");
                 printf("\n>>> Volviendo al Menu Principal...\n");
@@ -53,8 +58,8 @@ void registrarVehiculo() {
     system("cls");
     printf("\n--- ALTA DE VEHICULO ---\n");
     printf("Ingrese la patente: ");
-    fflush(stdin);
-    gets(nuevoAuto.patente);
+    fgets(nuevoAuto.patente, sizeof(nuevoAuto.patente), stdin);
+    nuevoAuto.patente[strcspn(nuevoAuto.patente, "\n")]='\0';
     //Control de patente duplicada
     archivo = fopen("vehiculos.dat", "rb"); 
     if (archivo != NULL) {
@@ -72,18 +77,20 @@ void registrarVehiculo() {
         printf("Operacion cancelada.\n");
     } else {
         printf("Ingrese la marca: ");
-        gets(nuevoAuto.marca);
+        fgets(nuevoAuto.marca, sizeof(nuevoAuto.marca), stdin);
+    	nuevoAuto.marca[strcspn(nuevoAuto.marca, "\n")]='\0';
         printf("Ingrese el modelo: ");
-        gets(nuevoAuto.modelo);
+        fgets(nuevoAuto.modelo, sizeof(nuevoAuto.modelo), stdin);
+    	nuevoAuto.modelo[strcspn(nuevoAuto.modelo, "\n")]='\0';
         printf("Ingrese el anio: ");
         scanf("%d", &nuevoAuto.anio);
         do{
         	printf("ERROR ingrese un año valido.");
         	scanf("%d", &nuevoAuto.anio);
 		} while (nuevoAuto.anio<1900||nuevoAuto.anio>2026);
-        fflush(stdin);
         printf("Ingrese el tipo (ej. Auto, Camioneta): ");
-        gets(nuevoAuto.tipo);
+        fgets(nuevoAuto.tipo, sizeof(nuevoAuto.tipo), stdin);
+    	nuevoAuto.tipo[strcspn(nuevoAuto.tipo, "\n")]='\0';
         printf("Ingrese la capacidad (cantidad de personas): ");
         scanf("%d", &nuevoAuto.capacidad);
         do{
@@ -116,7 +123,8 @@ void modificarVehiculo() {
     system("cls");
     printf("\n--- MODIFICAR VEHICULO ---\n");
     printf("Ingrese la patente del vehiculo a modificar: ");
-    gets(patenteBuscada);
+    fgets(patenteBuscada, sizeof(patenteBuscada), stdin);
+    patenteBuscada[strcspn(patenteBuscada, "\n")]='\0';
     archivo = fopen("vehiculos.dat", "r+b"); 
     if (archivo == NULL) {
         printf("[ERROR] El archivo no existe o no hay vehiculos registrados.\n");
@@ -133,11 +141,12 @@ void modificarVehiculo() {
         		scanf("%f", &autoLeido.precio_dia);
 			} while (autoLeido.precio_dia<=0);
             printf("Ingrese el nuevo estado (Disponible, Alquilado, Baja, En mantenimiento): ");
-            fflush(stdin);
-            gets(autoLeido.estado);
+            fgets(autoLeido.estado, sizeof(autoLeido.estado), stdin);
+    		autoLeido.estado[strcspn(autoLeido.estado, "\n")]='\0';
             fseek(archivo, -sizeof(struct Vehiculo), SEEK_CUR);
             fwrite(&autoLeido, sizeof(struct Vehiculo), 1, archivo);
             printf("\nVehiculo modificado exitosamente!\n");
+            break;
         }
     }
     if (encontrado == 0) {
@@ -154,8 +163,8 @@ void buscarVehiculo() {
     system("cls");
     printf("\n--- BUSCAR VEHICULO ---\n");
     printf("Ingrese la patente a buscar: ");
-    fflush(stdin);
-    gets(patenteBuscada);
+    fgets(patenteBuscada, sizeof(patenteBuscada), stdin);
+    patenteBuscada[strcspn(patenteBuscada, "\n")]='\0';
     archivo = fopen("vehiculos.dat", "rb"); 
     if (archivo == NULL) {
         printf("[ERROR] No hay vehiculos registrados.\n");
@@ -178,6 +187,34 @@ void buscarVehiculo() {
     }
     if (encontrado == 0) {
         printf("[ERROR] Vehiculo no encontrado.\n");
+    }
+    fclose(archivo);
+}
+void listarVehiculos() {
+    FILE *archivo;
+    struct Vehiculo autoLeido;
+    int cont = 0;
+    system("cls");
+    printf("\n--- LISTADO GENERAL DE VEHICULOS ---\n");
+    archivo = fopen("vehiculos.dat", "rb");
+    if (archivo == NULL) {
+        printf("[ERROR] No hay vehiculos registrados.\n");
+        return;
+    }
+    printf("%-10s %-12s %-12s %-6s %-10s %-6s %-10s %-15s\n", 
+           "PATENTE", "MARCA", "MODELO", "ANIO", "TIPO", "CAP.", "PRECIO/DIA", "ESTADO");
+    printf("----------------------------------------------------------------------------------------\n");
+    while (fread(&autoLeido, sizeof(struct Vehiculo), 1, archivo) == 1) {
+        printf("%-10s %-12s %-12s %-6d %-10s %-6d $%-9.2f %-15s\n",
+               autoLeido.patente, autoLeido.marca, autoLeido.modelo, 
+               autoLeido.anio, autoLeido.tipo, autoLeido.capacidad, 
+               autoLeido.precio_dia, autoLeido.estado);
+        cont++;
+    }
+    if (cont == 0) {
+        printf("El archivo esta vacio.\n");
+    } else {
+        printf("\nTotal de vehiculos registrados: %d\n", cont);
     }
     fclose(archivo);
 }

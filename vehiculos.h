@@ -14,4 +14,5 @@ void submenuVehiculos();
 void registrarVehiculo();
 void modificarVehiculo();
 void buscarVehiculo();
+void listarVehiculos();
 #endif
