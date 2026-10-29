@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "menu.h" 
 #include "vehiculos.h"
+#include "clientes.h"
 
 void pausarPantalla() {
     printf("\nPresione ENTER para continuar...");
@@ -30,6 +31,7 @@ void mostrarMenuPrincipal() {
             case 1:
                 system("cls"); // Limpiamos antes de entrar al módulo
                 printf("--- GESTION DE CLIENTES ---\n");
+                submenuClientes();
                 pausarPantalla(); // Pausamos para que el usuario lea
                 break;
             case 2:

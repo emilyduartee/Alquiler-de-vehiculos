@@ -56,6 +56,7 @@ void registrarVehiculo() {
     system("cls");
     printf("\n--- ALTA DE VEHICULO ---\n");
     printf("Ingrese la patente: ");
+    fflush(stdin);
     fgets(nuevoVehiculo.patente, sizeof(nuevoVehiculo.patente), stdin);
     nuevoVehiculo.patente[strcspn(nuevoVehiculo.patente, "\n")]='\0';
     //Control de patente duplicada
@@ -89,6 +90,7 @@ void registrarVehiculo() {
         		printf("ERROR ingrese un año valido. Reintente.");
 			}
 		} while (nuevoVehiculo.anio<1900||nuevoVehiculo.anio>2026);
+		fflush(stdin);
         printf("Ingrese el tipo (ej. Auto, Camioneta): ");
         fgets(nuevoVehiculo.tipo, sizeof(nuevoVehiculo.tipo), stdin);
     	nuevoVehiculo.tipo[strcspn(nuevoVehiculo.tipo, "\n")]='\0';
@@ -123,6 +125,7 @@ void modificarVehiculo() {
     struct Vehiculo vehiculoLeido;
     char patenteBuscada[15];
     int encontrado = 0;
+    fflush(stdin);
     system("cls");
     printf("\n--- MODIFICAR VEHICULO ---\n");
     printf("Ingrese la patente del vehiculo a modificar: ");
@@ -165,6 +168,7 @@ void buscarVehiculo() {
     struct Vehiculo vehiculoLeido;
     char patenteBuscada[15];
     int encontrado = 0;
+    fflush(stdin);
     system("cls");
     printf("\n--- BUSCAR VEHICULO ---\n");
     printf("Ingrese la patente a buscar: ");
