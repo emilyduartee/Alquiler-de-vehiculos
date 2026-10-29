@@ -11,8 +11,8 @@ void submenuAlquileres() {
         system("cls");
         printf("\n=== SUBMENU GESTION DE ALQUILERES ===\n");
         printf("1. Realizar nuevo alquiler\n");
-        printf("2. Registrar devolucion de vehiculo\n");
-        printf("3. Listar todos los alquileres\n");
+        printf("2. Listar todos los alquileres\n");
+        printf("3. Modificar alquiler\n");
         printf("0. Volver al Menu Principal\n");
         printf("Ingrese una opcion: ");
         scanf("%d", &opc);
@@ -25,12 +25,12 @@ void submenuAlquileres() {
                 break;
             case 2:
                 system("cls");
-                registrarDevolucion();
+                listarAlquileres();
                 pausarPantalla();
                 break;
             case 3:
                 system("cls");
-                listarAlquileres();
+                modificarAlquiler();
                 pausarPantalla();
                 break;
             case 0:
@@ -305,4 +305,138 @@ void listarAlquileres() {
         printf("\nTotal de alquileres registrados: %d\n", cont);
     }
     fclose(archivo);
+}
+void modificarAlquiler() {
+    FILE *fAlquileres, *fVehiculos;
+    struct Alquiler alquiler;
+    struct Vehiculo vehiculoViejo, vehiculoNuevo;
+    int numAlquilerBuscado;
+    int encontrado = 0;
+    int patenteCambio = 0;
+    char nuevaPatente[15];
+    float precioDiaVehiculo = 0.0;
+    system("cls");
+    printf("\n--- MODIFICAR ALQUILER REGISTRADO ---\n");
+    do {
+        printf("Ingrese el Numero de Alquiler a modificar: ");
+        if (scanf("%d", &numAlquilerBuscado) != 1) {
+            printf("[ERROR] Debe ingresar un numero entero valido. Reintente.\n");
+            while (getchar() != '\n');
+            numAlquilerBuscado = 0;
+        }
+    } while (numAlquilerBuscado <= 0);
+    fAlquileres = fopen("alquileres.dat", "rb+");
+    if (fAlquileres == NULL) {
+        printf("[ERROR] No se pudo abrir el archivo alquileres.dat o no hay registros.\n");
+        return;
+    }
+    while (fread(&alquiler, sizeof(struct Alquiler), 1, fAlquileres) == 1) {
+        if (alquiler.numAlquiler == numAlquilerBuscado) {
+            encontrado = 1;
+            if (strcmp(alquiler.estado, "Activo") != 0) {
+                printf("\n[ERROR] No se puede modificar el alquiler Nro %d porque se encuentra %s.\n", 
+                       numAlquilerBuscado, alquiler.estado);
+                fclose(fAlquileres);
+                return;
+            }
+            printf("\nAlquiler Encontrado:\n");
+            printf("DNI Cliente: %ld | Patente Actual: %s | F. Inicio: %ld | Dias: %d | Total: $%.2f\n",
+                   alquiler.DNI, alquiler.patente, alquiler.fechaInicio, alquiler.cantDias, alquiler.importeTotal);
+            fflush(stdin);
+            printf("\n¿Desea cambiar la patente del vehiculo? (S/N): ");
+            char resp = getchar();
+            while (getchar() != '\n');
+            if (resp == 'S' || resp == 's') {
+                printf("Ingrese la NUEVA patente del vehiculo: ");
+                fgets(nuevaPatente, sizeof(nuevaPatente), stdin);
+                nuevaPatente[strcspn(nuevaPatente, "\n")] = '\0';
+                if (strcmp(nuevaPatente, alquiler.patente) != 0) {
+                    fVehiculos = fopen("vehiculos.dat", "rb+");
+                    if (fVehiculos == NULL) {
+                        printf("[ERROR] No se pudo abrir vehiculos.dat.\n");
+                        fclose(fAlquileres);
+                        return;
+                    }
+                    int nuevoValido = 0;
+                    while (fread(&vehiculoNuevo, sizeof(struct Vehiculo), 1, fVehiculos) == 1) {
+                        if (strcmp(vehiculoNuevo.patente, nuevaPatente) == 0) {
+                            if (strcmp(vehiculoNuevo.estado, "Disponible") == 0) {
+                                nuevoValido = 1;
+                                precioDiaVehiculo = vehiculoNuevo.precio_dia;
+                            } else {
+                                printf("[ERROR] El nuevo vehiculo (%s) no esta Disponible (Estado: %s).\n", 
+                                       nuevaPatente, vehiculoNuevo.estado);
+                            }
+                            break;
+                        }
+                    }
+                    if (!nuevoValido) {
+                        printf("[ERROR] No se pudo realizar el cambio de vehiculo. Operacion cancelada.\n");
+                        fclose(fVehiculos);
+                        fclose(fAlquileres);
+                        return;
+                    }
+                    strcpy(vehiculoNuevo.estado, "Alquilado");
+                    fseek(fVehiculos, -sizeof(struct Vehiculo), SEEK_CUR);
+                    fwrite(&vehiculoNuevo, sizeof(struct Vehiculo), 1, fVehiculos);
+                    fseek(fVehiculos, 0, SEEK_SET);
+                    while (fread(&vehiculoViejo, sizeof(struct Vehiculo), 1, fVehiculos) == 1) {
+                        if (strcmp(vehiculoViejo.patente, alquiler.patente) == 0) {
+                            strcpy(vehiculoViejo.estado, "Disponible");
+                            fseek(fVehiculos, -sizeof(struct Vehiculo), SEEK_CUR);
+                            fwrite(&vehiculoViejo, sizeof(struct Vehiculo), 1, fVehiculos);
+                            break;
+                        }
+                    }
+                    fclose(fVehiculos);
+                    strcpy(alquiler.patente, nuevaPatente);
+                    patenteCambio = 1;
+                }
+            }
+            if (!patenteCambio) {
+                fVehiculos = fopen("vehiculos.dat", "rb");
+                if (fVehiculos != NULL) {
+                    while (fread(&vehiculoViejo, sizeof(struct Vehiculo), 1, fVehiculos) == 1) {
+                        if (strcmp(vehiculoViejo.patente, alquiler.patente) == 0) {
+                            precioDiaVehiculo = vehiculoViejo.precio_dia;
+                            break;
+                        }
+                    }
+                    fclose(fVehiculos);
+                }
+            }
+            do {
+                printf("Nueva Fecha de inicio (AAAAMMDD): ");
+                scanf("%ld", &alquiler.fechaInicio);
+                if (!esFechaValida(alquiler.fechaInicio)) {
+                    printf("[ERROR] Fecha invalida. Reintente.\n");
+                }
+            } while (!esFechaValida(alquiler.fechaInicio));
+            do {
+                printf("Nueva cantidad de dias contratados (> 0): ");
+                scanf("%d", &alquiler.cantDias);
+                if (alquiler.cantDias <= 0) {
+                    printf("[ERROR] La cantidad de dias debe ser mayor a cero.\n");
+                }
+            } while (alquiler.cantDias <= 0);
+            alquiler.importeTotal = alquiler.cantDias * precioDiaVehiculo;
+            alquiler.fechaPrevista = alquiler.fechaInicio;
+            fseek(fAlquileres, -sizeof(struct Alquiler), SEEK_CUR);
+            fwrite(&alquiler, sizeof(struct Alquiler), 1, fAlquileres);
+
+            printf("\n==================================================\n");
+            printf(">>> ALQUILER MODIFICADO EXITOSAMENTE!\n");
+            printf("Nro. de Alquiler:     %d\n", alquiler.numAlquiler);
+            printf("Patente Asignada:     %s\n", alquiler.patente);
+            printf("Nuevo Importe Total:  $%.2f\n", alquiler.importeTotal);
+            printf("==================================================\n");
+            break;
+        }
+    }
+
+    if (!encontrado) {
+        printf("[ERROR] No se encontro el alquiler Numero %d.\n", numAlquilerBuscado);
+    }
+
+    fclose(fAlquileres);
 }

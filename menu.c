@@ -3,6 +3,8 @@
 #include "menu.h" 
 #include "vehiculos.h"
 #include "clientes.h"
+#include "movimientos.h"
+#include "alquileres.h"
 
 void pausarPantalla() {
     printf("\nPresione ENTER para continuar...");
@@ -10,7 +12,6 @@ void pausarPantalla() {
     getchar();
 }
 
-// Desarrollo de la función menu
 void mostrarMenuPrincipal() {
     int opc;
     
@@ -29,10 +30,10 @@ void mostrarMenuPrincipal() {
         
         switch(opc) {
             case 1:
-                system("cls"); // Limpiamos antes de entrar al módulo
+                system("cls");
                 printf("--- GESTION DE CLIENTES ---\n");
                 submenuClientes();
-                pausarPantalla(); // Pausamos para que el usuario lea
+                pausarPantalla(); // pausa para que el usuario lea
                 break;
             case 2:
                 system("cls");
@@ -43,16 +44,19 @@ void mostrarMenuPrincipal() {
             case 3:
                 system("cls");
                 printf("--- GESTION DE ALQUILERES ---\n");
+                submenuAlquileres();
                 pausarPantalla();
                 break;
             case 4:
                 system("cls");
                 printf("--- GESTION DE DEVOLUCIONES ---\n");
+                registrarDevolucion();
                 pausarPantalla();
                 break;
             case 5:
                system("cls");
                 printf("--- GESTION DE PAGOS ---\n");
+                submenuMovimientos();
                 pausarPantalla();
                 break;
             case 6:

@@ -18,5 +18,6 @@ void submenuAlquileres();
 void realizarAlquiler();
 void registrarDevolucion();
 void listarAlquileres();
+void modificarAlquiler();
 
 #endif
