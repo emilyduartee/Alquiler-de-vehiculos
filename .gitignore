@@ -1,14 +1,3 @@
-*.dat
-*.exe
+# Objetos y binarios temporales de compilacion
 *.o
-*.win
 *.layout
-tpi estructurada.layout
-tpi estructurada.layout
-*.exe
-*.layout
-*.win
-*.exe
-*.layout
-*.win
-*.o

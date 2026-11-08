@@ -1,23 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "menu.h" 
+#include "menu.h"
 #include "vehiculos.h"
 #include "clientes.h"
 #include "movimientos.h"
 #include "alquileres.h"
+#include "reportes.h"
+#include "utils.h"
 
-void pausarPantalla() {
-    printf("\nPresione ENTER para continuar...");
-    fflush(stdin);
-    getchar();
-}
+void mostrarMenuPrincipal(void) {
+    int opc = -1;
 
-void mostrarMenuPrincipal() {
-    int opc;
-    
     do {
-    	system("cls"); // Limpieza de pantalla
-        printf("\n=== MENU PRINCIPAL ===\n");
+        limpiarPantalla();
+        printf("========================================\n");
+        printf("   SISTEMA DE ALQUILER DE VEHICULOS\n");
+        printf("========================================\n");
         printf("1. Clientes\n");
         printf("2. Vehiculos\n");
         printf("3. Alquileres\n");
@@ -25,53 +23,35 @@ void mostrarMenuPrincipal() {
         printf("5. Pagos\n");
         printf("6. Consultas y Reportes\n");
         printf("0. Salir\n");
-        printf("Ingrese una opcion: ");
-        scanf("%d", &opc);
-        
-        switch(opc) {
+        printf("========================================\n");
+        leerEntero("Seleccione una opcion: ", 0, 6, &opc);
+
+        switch (opc) {
             case 1:
-                system("cls");
-                printf("--- GESTION DE CLIENTES ---\n");
                 submenuClientes();
-                pausarPantalla(); // pausa para que el usuario lea
                 break;
             case 2:
-                system("cls");
-                printf("--- GESTION DE VEHICULOS ---\n");
                 submenuVehiculos();
-                pausarPantalla();
                 break;
             case 3:
-                system("cls");
-                printf("--- GESTION DE ALQUILERES ---\n");
                 submenuAlquileres();
-                pausarPantalla();
                 break;
             case 4:
-                system("cls");
-                printf("--- GESTION DE DEVOLUCIONES ---\n");
                 registrarDevolucion();
                 pausarPantalla();
                 break;
             case 5:
-               system("cls");
-                printf("--- GESTION DE PAGOS ---\n");
                 submenuMovimientos();
-                pausarPantalla();
                 break;
             case 6:
-                system("cls");
-                printf("--- CONSULTAS Y REPORTES ---\n");
-                pausarPantalla();
+                submenuReportes();
                 break;
             case 0:
-                system("cls");
-                printf("--- SALIENDO DEL PROGRAMA ---\n");
+                limpiarPantalla();
+                printf("\n>>> Saliendo del sistema...\n");
                 break;
             default:
-               system("cls");
-                printf("--- ERROR: Opcion no valida ---\n");
-                printf("--- Ingrese una opcion valida ---\n");
+                printf("\n[ERROR] Opcion no valida.\n");
                 pausarPantalla();
                 break;
         }

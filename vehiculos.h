@@ -1,18 +1,30 @@
 #ifndef VEHICULOS_H
 #define VEHICULOS_H
-struct Vehiculo{
-    char patente[15];
-    char marca[30];
-    char modelo[30];
+
+#include "comun.h"
+
+struct Vehiculo {
+    char patente[LON_PATENTE];
+    char marca[LON_MARCA];
+    char modelo[LON_MODELO];
     int anio;
-    char tipo[30];
+    char tipo[LON_TIPO_VEH];
     int capacidad;
-    float precio_dia;
-    char estado[20];
-    };
-void submenuVehiculos();
-void registrarVehiculo();
-void modificarVehiculo();
-void buscarVehiculo();
-void listarVehiculos();
+    double precio_dia;
+    char estado[LON_ESTADO];
+};
+
+void submenuVehiculos(void);
+void registrarVehiculo(void);
+void modificarVehiculo(void);
+void buscarVehiculo(void);
+void listarVehiculos(void);
+
+/* Helpers de persistencia */
+int buscarVehiculoPorPatente(const char *pat, struct Vehiculo *out);
+int existeVehiculo(const char *pat);
+int guardarVehiculo(const struct Vehiculo *v);
+int actualizarVehiculo(const struct Vehiculo *v);
+int actualizarEstadoVehiculo(const char *pat, const char *estado);
+
 #endif

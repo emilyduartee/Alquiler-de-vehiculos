@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include "menu.h"
 
-int main() {
-    // Llamamos a la función que está en menu.c
+int main(void) {
+    /* Delegacion directa al menu principal (sin logica de negocio en main) */
     mostrarMenuPrincipal();
     return 0;
 }

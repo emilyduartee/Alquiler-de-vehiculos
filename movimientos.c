@@ -1,212 +1,269 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "movimientos.h"
 #include "alquileres.h"
 #include "clientes.h"
-#include "menu.h"
+#include "comun.h"
+#include "utils.h"
+#include "fechas.h"
 
-void submenuMovimientos() {
-    int opc;
+int proximoNumeroMovimiento(void) {
+    FILE *f = fopen(ARCH_MOVIMIENTOS, "rb");
+    if (!f) {
+        return 1;
+    }
+    struct Movimiento m;
+    int maxNum = 0;
+    while (fread(&m, sizeof(struct Movimiento), 1, f) == 1) {
+        if (m.numMovimiento > maxNum) {
+            maxNum = m.numMovimiento;
+        }
+    }
+    fclose(f);
+    return maxNum + 1;
+}
+
+int regenerarArchivoMovimientosCliente(int dni) {
+    char nombreTxt[64];
+    sprintf(nombreTxt, "movimientos_%d.txt", dni);
+
+    FILE *fMov = fopen(ARCH_MOVIMIENTOS, "rb");
+    if (!fMov) {
+        return 0;
+    }
+
+    FILE *fTxt = fopen(nombreTxt, "w");
+    if (!fTxt) {
+        printf("[ERROR] No se pudo crear o sobrescribir %s.\n", nombreTxt);
+        fclose(fMov);
+        return 0;
+    }
+
+    struct Movimiento m;
+    int cantidad = 0;
+    while (fread(&m, sizeof(struct Movimiento), 1, fMov) == 1) {
+        if (m.DNI == dni) {
+            /* Formato CSV ;: numMov;numAlq;Tipo;monto;fecha;DNI;patente;medio */
+            fprintf(fTxt, "%d;%d;%s;%.2f;%d;%d;%s;%s\n",
+                    m.numMovimiento,
+                    m.numAlquiler,
+                    m.tipoMov,
+                    m.monto,
+                    m.fecha,
+                    m.DNI,
+                    m.patente,
+                    m.medioPago);
+            cantidad++;
+        }
+    }
+    fclose(fTxt);
+    fclose(fMov);
+    return 1;
+}
+
+int registrarMovimiento(int numAlq, const char *tipo, double monto, int fecha, const char *medio) {
+    struct Alquiler a;
+    if (!buscarAlquilerPorNumero(numAlq, &a)) {
+        printf("[ERROR] No se encontro el alquiler Nro %d para registrar el movimiento.\n", numAlq);
+        return 0;
+    }
+
+    struct Movimiento m;
+    memset(&m, 0, sizeof(struct Movimiento));
+
+    m.numMovimiento = proximoNumeroMovimiento();
+    m.numAlquiler = numAlq;
+    strncpy(m.tipoMov, tipo, LON_TIPO_MOV - 1);
+    m.tipoMov[LON_TIPO_MOV - 1] = '\0';
+    m.monto = monto;
+    m.fecha = fecha;
+    m.DNI = a.DNI;
+    strncpy(m.patente, a.patente, LON_PATENTE - 1);
+    m.patente[LON_PATENTE - 1] = '\0';
+    strncpy(m.medioPago, medio ? medio : MEDIO_NINGUNO, LON_MEDIO_PAGO - 1);
+    m.medioPago[LON_MEDIO_PAGO - 1] = '\0';
+
+    FILE *f = fopen(ARCH_MOVIMIENTOS, "ab");
+    if (!f) {
+        printf("[ERROR] No se pudo abrir %s para registrar el movimiento.\n", ARCH_MOVIMIENTOS);
+        return 0;
+    }
+    size_t escritos = fwrite(&m, sizeof(struct Movimiento), 1, f);
+    fclose(f);
+
+    if (escritos != 1) {
+        printf("[ERROR] Fallo al escribir el movimiento en %s.\n", ARCH_MOVIMIENTOS);
+        return 0;
+    }
+
+    /* A16: Actualizar archivo individual de texto del cliente */
+    regenerarArchivoMovimientosCliente(m.DNI);
+    return 1;
+}
+
+void registrarPago(void) {
+    limpiarPantalla();
+    printf("\n========================================\n");
+    printf("            REGISTRAR PAGO\n");
+    printf("========================================\n");
+
+    int numAlq = 0;
+    leerEntero("Ingrese el numero de alquiler a pagar: ", 1, 9999999, &numAlq);
+
+    struct Alquiler a;
+    if (!buscarAlquilerPorNumero(numAlq, &a)) {
+        printf("\n[ERROR] El alquiler Nro %d no existe en el sistema.\n", numAlq);
+        pausarPantalla();
+        return;
+    }
+
+    if (strcmp(a.estado, EST_ALQ_CANCELADO) == 0) {
+        printf("\n[ERROR] No se pueden registrar pagos para alquileres CANCELADOS.\n");
+        pausarPantalla();
+        return;
+    }
+
+    double saldoPendiente = a.importeTotal - a.importePagado;
+    if (saldoPendiente <= TOLERANCIA_SALDO) {
+        printf("\n[AVISO] El alquiler Nro %d ya se encuentra totalmente saldado.\n", numAlq);
+        printf("Importe Total:  $%.2f\n", a.importeTotal);
+        printf("Importe Pagado: $%.2f\n", a.importePagado);
+        pausarPantalla();
+        return;
+    }
+
+    printf("\n--- DATOS DEL ALQUILER ---\n");
+    printf("Nro Alquiler:    %d\n", a.numAlquiler);
+    printf("DNI Cliente:     %d\n", a.DNI);
+    printf("Patente Vehic:   %s\n", a.patente);
+    printf("Fecha de Inicio: %d\n", a.fechaInicio);
+    printf("Importe Total:   $%.2f\n", a.importeTotal);
+    printf("Importe Pagado:  $%.2f\n", a.importePagado);
+    printf("SALDO PENDIENTE: $%.2f\n", saldoPendiente);
+    printf("---------------------------\n");
+
+    double monto = 0.0;
+    while (1) {
+        leerDouble("Ingrese el monto a pagar: ", 0.0, &monto);
+        if (monto > saldoPendiente + TOLERANCIA_SALDO) {
+            printf("[ERROR] El monto no puede superar el saldo pendiente ($%.2f). Reintente.\n",
+                   saldoPendiente);
+            continue;
+        }
+        break;
+    }
+
+    printf("\nSeleccione medio de pago:\n");
+    printf("1. %s\n", MEDIO_EFECTIVO);
+    printf("2. %s\n", MEDIO_TARJETA);
+    printf("3. %s\n", MEDIO_TRANSFERENCIA);
+    int opcMedio = 1;
+    leerEntero("Opcion: ", 1, 3, &opcMedio);
+    const char *medioElegido = MEDIO_EFECTIVO;
+    if (opcMedio == 2) medioElegido = MEDIO_TARJETA;
+    else if (opcMedio == 3) medioElegido = MEDIO_TRANSFERENCIA;
+
+    int fechaPago = 0;
+    while (1) {
+        leerFecha("Ingrese la fecha del pago (AAAAMMDD): ", &fechaPago);
+        if (fechaPago < a.fechaInicio) {
+            printf("[ERROR] La fecha de pago no puede ser anterior al inicio del alquiler (%d). Reintente.\n",
+                   a.fechaInicio);
+            continue;
+        }
+        break;
+    }
+
+    /* Actualizar alquiler primero */
+    a.importePagado += monto;
+    if (!actualizarAlquiler(&a)) {
+        printf("\n[ERROR] No se pudo actualizar el importe pagado en alquileres.dat.\n");
+        pausarPantalla();
+        return;
+    }
+
+    /* Registrar movimiento */
+    if (registrarMovimiento(a.numAlquiler, MOV_PAGO, monto, fechaPago, medioElegido)) {
+        printf("\n========================================\n");
+        printf(">>> PAGO REGISTRADO EXITOSAMENTE!\n");
+        printf("Alquiler Nro:          %d\n", a.numAlquiler);
+        printf("Monto Abonado:         $%.2f\n", monto);
+        printf("Medio de Pago:         %s\n", medioElegido);
+        printf("Nuevo Saldo Pendiente: $%.2f\n", a.importeTotal - a.importePagado);
+        printf("========================================\n");
+    } else {
+        printf("\n[ERROR] Se actualizo el alquiler pero ocurrio un error al registrar el movimiento.\n");
+    }
+    pausarPantalla();
+}
+
+void listarMovimientos(void) {
+    limpiarPantalla();
+    printf("\n========================================================================================\n");
+    printf("                        LISTADO GENERAL DE MOVIMIENTOS\n");
+    printf("========================================================================================\n");
+
+    FILE *f = fopen(ARCH_MOVIMIENTOS, "rb");
+    if (!f) {
+        printf("[ERROR] No se pudo abrir %s o no hay movimientos registrados.\n", ARCH_MOVIMIENTOS);
+        pausarPantalla();
+        return;
+    }
+
+    printf("%-6s | %-6s | %-8s | %-12s | %-10s | %-10s | %-10s | %-14s\n",
+           "NRO", "ALQ", "TIPO", "MONTO", "FECHA", "DNI", "PATENTE", "MEDIO");
+    printf("----------------------------------------------------------------------------------------\n");
+
+    struct Movimiento m;
+    int cont = 0;
+    double totalMontos = 0.0;
+    while (fread(&m, sizeof(struct Movimiento), 1, f) == 1) {
+        printf("%-6d | %-6d | %-8s | $%11.2f | %-10d | %-10d | %-10s | %-14s\n",
+               m.numMovimiento, m.numAlquiler, m.tipoMov, m.monto, m.fecha,
+               m.DNI, m.patente, m.medioPago);
+        if (strcmp(m.tipoMov, MOV_PAGO) == 0) {
+            totalMontos += m.monto;
+        }
+        cont++;
+    }
+    fclose(f);
+
+    if (cont == 0) {
+        printf("No hay movimientos registrados.\n");
+    } else {
+        printf("\nTotal de movimientos: %d (Suma total de Pagos: $%.2f)\n", cont, totalMontos);
+    }
+    pausarPantalla();
+}
+
+void submenuMovimientos(void) {
+    int opc = -1;
     do {
-        system("cls");
-        printf("\n=== SUBMENU GESTION DE PAGOS Y MOVIMIENTOS ===\n");
-        printf("1. Registrar pago / cobro de alquiler\n");
-        printf("2. Listar historial general de pagos\n");
+        limpiarPantalla();
+        printf("\n========================================\n");
+        printf("           SUBMENU PAGOS\n");
+        printf("========================================\n");
+        printf("1. Registrar pago\n");
+        printf("2. Listar todos los movimientos\n");
         printf("0. Volver al Menu Principal\n");
-        printf("Ingrese una opcion: ");
-        scanf("%d", &opc);
+        printf("========================================\n");
+        leerEntero("Seleccione una opcion: ", 0, 2, &opc);
 
-        switch(opc) {
+        switch (opc) {
             case 1:
-                system("cls");
                 registrarPago();
-                pausarPantalla();
                 break;
             case 2:
-                system("cls");
                 listarMovimientos();
-                pausarPantalla();
                 break;
             case 0:
-                system("cls");
-                printf("\n>>> Volviendo al Menu Principal...\n");
                 break;
             default:
-                system("cls");
-                printf("\n>>> ERROR: Opcion no valida.\n");
+                printf("\n[ERROR] Opcion no valida.\n");
                 pausarPantalla();
                 break;
         }
     } while (opc != 0);
-}
-
-void registrarPago() {
-    FILE *fAlquileres, *fMov;
-    struct Alquiler alq;
-    struct Movimiento nuevoMov, auxMov;
-    int numAlqBuscado;
-    int encontrado = 0;
-    int ultimoNumMov = 0;
-    float saldoPendiente = 0.0;
-    int opcMedio;
-    system("cls");
-    printf("\n--- REGISTRAR PAGO DE ALQUILER ---\n");
-    do {
-        printf("Ingrese el Numero de Alquiler a cobrar: ");
-        if (scanf("%d", &numAlqBuscado) != 1) {
-            printf("[ERROR] Ingrese un numero entero valido. Reintente.\n");
-            fflush(stdin);
-            numAlqBuscado = 0;
-        }
-    } while (numAlqBuscado <= 0);
-    fAlquileres = fopen("alquileres.dat", "rb+");
-    if (fAlquileres == NULL) {
-        printf("[ERROR] No se pudo abrir el archivo alquileres.dat o no hay registros.\n");
-        return;
-    }
-    while (fread(&alq, sizeof(struct Alquiler), 1, fAlquileres) == 1) {
-        if (alq.numAlquiler == numAlqBuscado) {
-            encontrado = 1;
-            saldoPendiente = alq.importeTotal - alq.importePagado;
-            printf("\nAlquiler Nro: %d | DNI Cliente: %ld | Patente: %s\n", 
-                   alq.numAlquiler, alq.DNI, alq.patente);
-            printf("Importe Total: $%.2f | Acumulado Pagado: $%.2f\n", 
-                   alq.importeTotal, alq.importePagado);
-            printf("SALDO PENDIENTE: $%.2f\n", saldoPendiente);
-            if (saldoPendiente <= 0.001) {
-                printf("\n[AVISO] Este alquiler ya se encuentra totalmente saldado.\n");
-                fclose(fAlquileres);
-                return;
-            }
-            nuevoMov.numAlquiler = alq.numAlquiler;
-            nuevoMov.DNI = alq.DNI;
-            do {
-                printf("\nIngrese la fecha del pago (AAAAMMDD): ");
-                scanf("%ld", &nuevoMov.fecha);
-                if (!esFechaValida(nuevoMov.fecha)) {
-                    printf("[ERROR] Fecha invalida. Reintente.\n");
-                }
-            } while (!esFechaValida(nuevoMov.fecha));
-            do {
-                printf("Ingrese el monto a abonar (Maximo $%.2f): $", saldoPendiente);
-                if (scanf("%f", &nuevoMov.monto) != 1) {
-                    printf("[ERROR] Ingrese un valor numerico valido.\n");
-                    while (getchar() != '\n');
-                    nuevoMov.monto = 0.0;
-                } else if (nuevoMov.monto <= 0) {
-                    printf("[ERROR] El monto debe ser mayor a cero.\n");
-                } else if (nuevoMov.monto > saldoPendiente) {
-                    printf("[ERROR] El monto ingresado supera el saldo pendiente ($%.2f).\n", saldoPendiente);
-                }
-            } while (nuevoMov.monto <= 0 || nuevoMov.monto > saldoPendiente);
-            printf("\nSeleccione medio de pago:\n");
-            printf("1. Efectivo\n");
-            printf("2. Tarjeta\n");
-            printf("3. Transferencia\n");
-            printf("Opcion: ");
-            scanf("%d", &opcMedio);
-            switch(opcMedio) {
-                case 1: strcpy(nuevoMov.tipoPago, "Efectivo"); break;
-                case 2: strcpy(nuevoMov.tipoPago, "Tarjeta"); break;
-                case 3: strcpy(nuevoMov.tipoPago, "Transferencia"); break;
-                default: strcpy(nuevoMov.tipoPago, "Efectivo"); break;
-            }
-
-            // Asignacion de ID autoincremental de movimiento
-            fMov = fopen("movimientos.dat", "rb");
-            if (fMov != NULL) {
-                while (fread(&auxMov, sizeof(struct Movimiento), 1, fMov) == 1) {
-                    ultimoNumMov = auxMov.numMovimiento;
-                }
-                fclose(fMov);
-            }
-            nuevoMov.numMovimiento = ultimoNumMov + 1;
-
-            // Actualizacion del archivo binario alquileres.dat
-            alq.importePagado += nuevoMov.monto;
-            fseek(fAlquileres, -sizeof(struct Alquiler), SEEK_CUR);
-            fwrite(&alq, sizeof(struct Alquiler), 1, fAlquileres);
-            fclose(fAlquileres);
-
-            // Guardar en el binario general de movimientos
-            fMov = fopen("movimientos.dat", "ab");
-            if (fMov != NULL) {
-                fwrite(&nuevoMov, sizeof(struct Movimiento), 1, fMov);
-                fclose(fMov);
-            }
-
-            // Generacion y actualizacion del archivo .txt individual del cliente
-            float saldoRestantePosterior = alq.importeTotal - alq.importePagado;
-            guardarEnTextoCliente(nuevoMov, saldoRestantePosterior);
-
-            printf("\n==================================================\n");
-            printf(">>> PAGO REGISTRADO EXITOSAMENTE!\n");
-            printf("Comprobante Nro:    %d\n", nuevoMov.numMovimiento);
-            printf("Monto Abonado:      $%.2f (%s)\n", nuevoMov.monto, nuevoMov.tipoPago);
-            printf("Saldo Restante:     $%.2f\n", saldoRestantePosterior);
-            printf("==================================================\n");
-            break;
-        }
-    }
-
-    if (!encontrado) {
-        printf("[ERROR] No se encontro el alquiler Numero %d.\n", numAlqBuscado);
-        fclose(fAlquileres);
-    }
-}
-
-void guardarEnTextoCliente(struct Movimiento mov, float saldoRestante) {
-    FILE *archTxt;
-    char nombreArchivo[40];
-
-    // Creacion dinámica del nombre: movimientos_DNI.txt
-    sprintf(nombreArchivo, "movimientos_%ld.txt", mov.DNI);
-
-    archTxt = fopen(nombreArchivo, "a");
-    if (archTxt != NULL) {
-        fprintf(archTxt, "MOVILIDAD Nro: %d | Alquiler: %d | Fecha: %ld | Pago: $%.2f (%s) | Saldo Pendiente: $%.2f\n",
-                mov.numMovimiento, mov.numAlquiler, mov.fecha, mov.monto, mov.tipoPago, saldoRestante);
-        fclose(archTxt);
-    } else {
-        printf("[ERROR] No se pudo actualizar el archivo de texto del cliente (%s).\n", nombreArchivo);
-    }
-}
-
-void listarMovimientos() {
-    FILE *archivo;
-    struct Movimiento mov;
-    int cont = 0;
-
-    system("cls");
-    printf("\n--- HISTORIAL GENERAL DE MOVIMIENTOS Y COBROS ---\n");
-    archivo = fopen("movimientos.dat", "rb");
-
-    if (archivo == NULL) {
-        printf("[ERROR] No hay movimientos registrados en el sistema.\n");
-        return;
-    }
-
-    printf("%-8s %-10s %-10s %-10s %-12s %-15s\n", 
-           "NRO MOV", "NRO ALQ", "DNI", "FECHA", "MONTO", "MEDIO PAGO");
-    printf("-------------------------------------------------------------------\n");
-
-    while (fread(&mov, sizeof(struct Movimiento), 1, archivo) == 1) {
-        printf("%-8d %-10d %-10ld %-10ld $%-11.2f %-15s\n",
-               mov.numMovimiento,
-               mov.numAlquiler,
-               mov.DNI,
-               mov.fecha,
-               mov.monto,
-               mov.tipoPago);
-        cont++;
-    }
-
-    if (cont == 0) {
-        printf("El archivo de movimientos esta vacio.\n");
-    } else {
-        printf("\nTotal de pagos registrados: %d\n", cont);
-    }
-
-    fclose(archivo);
 }
